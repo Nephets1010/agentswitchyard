@@ -80,7 +80,7 @@
     <picocli.version>4.7.6</picocli.version>
     <wiremock.version>3.13.2</wiremock.version>
     <assertj.version>3.27.3</assertj.version>
-    <json-schema-validator.version>1.5.6</json-schema-validator.version>
+    <json-schema-validator.version>3.0.8</json-schema-validator.version>
     <testcontainers.version>1.21.3</testcontainers.version>
 
     <spotless.version>2.44.4</spotless.version>
