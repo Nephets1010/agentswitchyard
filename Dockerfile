@@ -5,7 +5,7 @@
 # 刻意不 COPY contract/ 与 docs/ —— 镜像越小，嵌入业务应用越容易被接受。
 
 # ---------- 构建阶段 ----------
-FROM eclipse-temurin:21-jdk-jammy AS builder
+FROM eclipse-temurin:25-jdk-jammy AS builder
 
 WORKDIR /build
 
@@ -33,7 +33,7 @@ COPY sample/src sample/src
 RUN ./mvnw -B -q clean package -DskipTests -Dspotless.check.skip=true -Djacoco.skip=true
 
 # ---------- 运行阶段 ----------
-FROM eclipse-temurin:21-jre-jammy AS runtime
+FROM eclipse-temurin:25-jre-jammy AS runtime
 
 # 中文场景：容器内必须有 UTF-8 与东八区，否则审批留痕里的中文会变成问号
 ENV LANG=C.UTF-8 \
