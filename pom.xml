@@ -74,7 +74,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <!-- ==== 锁版本：禁止用浮动版本号 ==== -->
-    <spring-ai.version>1.1.8</spring-ai.version>
+    <spring-ai.version>2.0.1</spring-ai.version>
     <!-- ★ P1 适配层才引入（ADR-0002）：仅保留版本 property，pom 中不得出现对应依赖 -->
     <langgraph4j.version>1.8.14</langgraph4j.version>
     <picocli.version>4.7.6</picocli.version>
