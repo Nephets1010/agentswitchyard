@@ -77,7 +77,7 @@
     <spring-ai.version>1.1.8</spring-ai.version>
     <!-- ★ P1 适配层才引入（ADR-0002）：仅保留版本 property，pom 中不得出现对应依赖 -->
     <langgraph4j.version>1.8.14</langgraph4j.version>
-    <picocli.version>4.7.6</picocli.version>
+    <picocli.version>4.7.7</picocli.version>
     <wiremock.version>3.13.2</wiremock.version>
     <assertj.version>3.27.3</assertj.version>
     <json-schema-validator.version>1.5.6</json-schema-validator.version>
