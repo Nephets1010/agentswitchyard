@@ -1,0 +1,38 @@
+# ---- Maven ----
+target/
+.mvn/timing.properties
+
+# ---- IDE ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# ---- Git ----
+.git/
+.gitignore
+.github/
+
+# ---- 文档与契约：demo 镜像不需要 ----
+# ★ 这里【刻意不写】 '*.xml' / '!pom.xml' / '**/pom.xml' 这样的组合。
+#   它们的净效果是把【所有层级的 pom.xml 全部排除】，于是 Dockerfile 的 COPY pom.xml
+#   在构建上下文里找不到文件，BuildKit 在算 cache checksum 阶段就报 '"pom.xml": not found'
+#   —— 一条 RUN 都还没执行（①仓用 8 轮 CI 失败换来的教训）。
+#   改完本文件请跑：python3 tools/check_dockerignore.py
+*.md
+!README.md
+docs/
+contract/
+
+# ---- CI / 工程配置 ----
+.editorconfig
+tools/
+
+# ---- 敏感配置 ----
+.env
+.env.*
+**/application-local.yml

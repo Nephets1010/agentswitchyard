@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: agentswitchyard-starter-it
+  datasource:
+    url: jdbc:h2:mem:starter-it;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+agentswitchyard:
+  flow-definitions:
+    - classpath:flows/it-flow.yaml
+  approval:
+    rosters:
+      risk-officer:
+        - zhang-san
+        - li-si

@@ -1,0 +1,31 @@
+# 信贷审批助手（②T05 demo）：AI 初筛 → 风险打分 → 规则引擎 → 人工审批 → 放款
+# 全部步骤共用同一幂等键模板：同一 ref 的重复提交不会重复执行任何步骤
+flowId: credit-approve
+version: 1
+steps:
+  - stepId: ai-screen
+    kind: LLM
+    idempotencyKey: "credit:{ref}"
+    timeoutMs: 8000
+    maxAttempts: 2
+    description: AI 预审（初筛意见 + 用量计量）
+  - stepId: risk-score
+    kind: LLM
+    idempotencyKey: "credit:{ref}"
+    timeoutMs: 8000
+    description: 风险评分
+  - stepId: rule-engine
+    kind: RULE
+    idempotencyKey: "credit:{ref}"
+    description: 规则引擎（评分 < 600 直接拒绝，不可重试）
+  - stepId: manual-review
+    kind: HUMAN
+    requiresApproval: true
+    approvalRole: risk-officer
+    idempotencyKey: "credit:{ref}"
+    description: 人工复核（risk-officer 角色）
+  - stepId: disburse
+    kind: TOOL
+    idempotencyKey: "credit:{ref}"
+    compensation: cancelReserve
+    description: 放款（预留额度；失败可反向撤销）

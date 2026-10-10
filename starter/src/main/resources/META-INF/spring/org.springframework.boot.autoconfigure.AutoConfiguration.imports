@@ -1,0 +1,2 @@
+io.github.nephets.agentswitchyard.starter.AgentSwitchyardAutoConfiguration
+io.github.nephets.agentswitchyard.starter.boot.SwitchyardWebAutoConfiguration
