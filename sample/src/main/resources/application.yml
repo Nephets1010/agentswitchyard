@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: agentswitchyard-sample
+  datasource:
+    # 崩溃恢复测试（CrashResumeIT）经 SWY_DB_URL 指向文件库；本地体验默认 ./data/swy-demo
+    # ★ 不写死 driver-class-name：Spring Boot 按 JDBC URL 自动选驱动
+    #   （h2:// → H2 驱动，postgresql:// → Postgres 驱动）。写死 org.h2.Driver 会导致
+    #   compose 里连 PostgreSQL 时驱动打不开 URL、数据源初始化失败、sample 起不来。
+    url: ${SWY_DB_URL:jdbc:h2:file:./data/swy-demo}
+    username: sa
+    password: ""
+  ai:
+    # demo 内置确定性模型（零 API 成本）；接真实模型设 SWY_CHAT_MODEL=openai 并配 api-key
+    model:
+      chat: ${SWY_CHAT_MODEL:demo}
+    # 说明：chat 之外的 OpenAI 自动装配（音频/图像/审查等）仍会实例化客户端并强校验 key，
+    # demo 模式下永不发起调用，这里给占位 key 满足其启动校验（CI 全程零真实 API 消耗）。
+    openai:
+      api-key: ${SWY_OPENAI_API_KEY:sk-demo-placeholder-not-used}
+
+agentswitchyard:
+  flow-definitions:
+    - classpath:flows/credit-approve.yaml
+  approval:
+    rosters:
+      risk-officer:
+        - zhang-san
+        - li-si
+  recovery:
+    # ★ kill -9 后重启自动续跑 RUNNING 残留实例（CrashResumeIT 的核心依赖）
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

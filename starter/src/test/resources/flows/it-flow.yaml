@@ -1,0 +1,18 @@
+# IT 用测试流程：规则 → 人工审批 → 规则（覆盖审批挂起/续跑全链路）
+flowId: it-flow
+version: 1
+steps:
+  - stepId: prepare
+    kind: RULE
+    idempotencyKey: "it:{ref}"
+    description: 准备
+  - stepId: manual-review
+    kind: HUMAN
+    requiresApproval: true
+    approvalRole: risk-officer
+    idempotencyKey: "it:{ref}"
+    description: 人工复核
+  - stepId: finalize
+    kind: RULE
+    idempotencyKey: "it:{ref}"
+    description: 收尾

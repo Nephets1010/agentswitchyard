@@ -1,0 +1,32 @@
+# PR 标签自动打标（.github/labeler.yml v5 语法）
+core:
+  - changed-files:
+      - any-glob-to-any-file: 'core/**'
+
+store:
+  - changed-files:
+      - any-glob-to-any-file: 'store/**'
+
+starter:
+  - changed-files:
+      - any-glob-to-any-file: 'starter/**'
+
+sample:
+  - changed-files:
+      - any-glob-to-any-file: 'sample/**'
+
+mock-llm:
+  - changed-files:
+      - any-glob-to-any-file: 'mock-llm/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ['docs/**', '*.md']
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**', 'tools/**']
+
+contract:
+  - changed-files:
+      - any-glob-to-any-file: 'contract/**'
