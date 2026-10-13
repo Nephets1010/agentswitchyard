@@ -116,13 +116,29 @@ PENDING → RUNNING → SUCCEEDED
 
 ## 模块
 
-| 模块 | 说明 |
-|------|------|
-| `agentswitchyard-core` | 流程定义 / 执行引擎 / 幂等 / 审批 / 补偿 / 回放 / 工具治理 / 轨迹导出。core 层除 Spring AI 模型 SPI 外零框架依赖 |
-| `agentswitchyard-store` | StepStore / ApprovalStore / ReplayStore 的 JDBC 实现（H2/MySQL/PG/达梦）+ Flyway 迁移 |
-| `agentswitchyard-spring-boot-starter` | 自动配置、`/_switchyard` REST API、审批 Webhook、picocli CLI、Spring AI 网关 |
-| `mock-llm` | OpenAI 兼容的确定性 mock 模型（CI 零成本零真实调用） |
-| `agentswitchyard-sample` | 信贷审批 demo + 真实 kill -9 崩溃恢复 IT |
+下面这张表是目录名、Maven 坐标与家族约定（`<repo>-core` / `<repo>-starter` / `<repo>-sample`）的对照表。
+行的顺序与根 `pom.xml` 的 `<modules>` 完全一致。
+
+| 目录名 | artifactId（Maven 坐标） | 对应家族约定 | 说明 |
+|------|------|------|------|
+| `core` | `io.github.nephets:agentswitchyard-core` | 家族 `<repo>-core`，本仓唯一的 core 模块 | 流程定义 / 执行引擎 / 幂等 / 审批 / 补偿 / 回放 / 工具治理 / 轨迹导出。除 Spring AI 模型 SPI 外零框架依赖 |
+| `store` | `io.github.nephets:agentswitchyard-store` | 家族骨架里没有这个位置，属本仓扩展模块 | StepStore / ApprovalStore / ReplayStore 的 JDBC 实现（H2/MySQL/PG/达梦）+ Flyway 迁移 |
+| `starter` | `io.github.nephets:agentswitchyard-spring-boot-starter` | 家族 `<repo>-starter`，未采用家族形式（实际为 `agentswitchyard-spring-boot-starter`），见说明第 2 条 | 自动配置、`/_switchyard` REST API、审批 Webhook、picocli CLI、Spring AI 网关 |
+| `mock-llm` | `io.github.nephets:agentswitchyard-mock-llm` | 家族骨架里没有这个位置，属本仓扩展模块 | OpenAI 兼容的确定性 mock 模型，CI 用它做到零真实调用、零成本 |
+| `sample` | `io.github.nephets:agentswitchyard-sample` | 家族 `<repo>-sample` | 信贷审批 demo + 真实 kill -9 崩溃恢复 IT |
+
+引依赖前建议先看这三条：
+
+1. **写进依赖的是 artifactId，不是目录名。** `mock-llm` 目录对应 `agentswitchyard-mock-llm`，`starter` 目录对应
+   `agentswitchyard-spring-boot-starter`；把目录名直接填进 `<dependency>` 是解析不到的。
+2. **starter 这个名字是跟随 Spring Boot 对第三方 starter 的命名建议。** 官方 reference 的说法是：第三方 starter
+   **不建议**以 `spring-boot` 开头（这个前缀留给 Spring Boot 官方 artifact），**通常**（typically）以项目名开头 ——
+   所以本仓叫 `agentswitchyard-spring-boot-starter`。这是命名建议，不是硬约束：叫 `agentswitchyard-starter` 一样能
+   解析，姊妹仓 `llm-switchyard` 就是这么叫的（`switchyard-starter`），一直用得好好的。也就是说家族各仓的 starter
+   命名目前并不统一；本仓按官方建议来，全家族要不要对齐属跨仓事项，不由本仓 README 定调。
+3. **`contract/`、`docs/`、`tools/` 不是 Maven 模块。** 它们不在 `<modules>` 里，也不产出 jar：`contract/` 放的是跨仓
+   共享的 JSON 契约（`contract-v1.json`，按 ADR-0003 只共享规范不共享 jar），`docs/` 放架构说明和 ADR，
+   `tools/` 放几个直接运行的 Python 校验脚本，不由 Maven 构建。
 
 ## 配置速查
 

@@ -118,13 +118,32 @@ Contracts (traceId / Usage / audit events / envelope / span attributes) are shar
 
 ## Modules
 
-| Module | Description |
-|------|------|
-| `agentswitchyard-core` | Flow definition / execution engine / idempotency / approvals / compensation / replay / tool governance / trace export. Zero framework deps except the Spring AI model SPI |
-| `agentswitchyard-store` | JDBC implementations of StepStore / ApprovalStore / ReplayStore (H2/MySQL/PG/DM8) + Flyway migrations |
-| `agentswitchyard-spring-boot-starter` | Auto-configuration, `/_switchyard` REST API, approval webhook, picocli CLI, Spring AI gateway |
-| `mock-llm` | Deterministic OpenAI-compatible mock model (CI: zero real API calls, zero cost) |
-| `agentswitchyard-sample` | Credit-approval demo + a real kill -9 crash-recovery IT |
+The table below is the authoritative mapping between directory names, Maven coordinates and the family convention
+(`<repo>-core` / `<repo>-starter` / `<repo>-sample`). Row order matches the root `pom.xml` `<modules>` exactly.
+
+| Directory | artifactId (Maven coordinate) | Family convention | Description |
+|------|------|------|------|
+| `core` | `io.github.nephets:agentswitchyard-core` | family `<repo>-core` — the only core module in this repo | Flow definition / execution engine / idempotency / approvals / compensation / replay / tool governance / trace export. Zero framework deps except the Spring AI model SPI |
+| `store` | `io.github.nephets:agentswitchyard-store` | no slot in the family skeleton — repo-specific extension | JDBC implementations of StepStore / ApprovalStore / ReplayStore (H2/MySQL/PG/DM8) + Flyway migrations |
+| `starter` | `io.github.nephets:agentswitchyard-spring-boot-starter` | family `<repo>-starter` — not in the family form (`agentswitchyard-spring-boot-starter`), see note 2 | Auto-configuration, `/_switchyard` REST API, approval webhook, picocli CLI, Spring AI gateway |
+| `mock-llm` | `io.github.nephets:agentswitchyard-mock-llm` | no slot in the family skeleton — repo-specific extension | Deterministic OpenAI-compatible mock model (CI: zero real API calls, zero cost) |
+| `sample` | `io.github.nephets:agentswitchyard-sample` | family `<repo>-sample` | Credit-approval demo + a real kill -9 crash-recovery IT |
+
+Three things to know before you add a dependency:
+
+1. **Dependencies are declared by artifactId, not by directory name.** The `mock-llm` directory carries
+   `agentswitchyard-mock-llm` and `starter` carries `agentswitchyard-spring-boot-starter`; putting the directory name
+   into a `<dependency>` block does not resolve.
+2. **The starter is named after Spring Boot's recommended naming for third-party starters.** The official reference
+   asks that a third-party starter *not* start with `spring-boot` (that prefix is reserved for official Spring Boot
+   artifacts) and says it *typically* starts with the project name — hence `agentswitchyard-spring-boot-starter`.
+   This is a naming recommendation, not a hard constraint: `agentswitchyard-starter` would resolve just fine, and
+   the sibling repo `llm-switchyard` does exactly that with `switchyard-starter`. So starter naming is not uniform
+   across the family today; this repo goes with the official recommendation, and whether the whole family should
+   align is a cross-repo matter — not something this README decides.
+3. **`contract/`, `docs/` and `tools/` are not Maven modules.** They are absent from `<modules>` and produce no jar.
+   `contract/` holds the cross-repo JSON contract (`contract-v1.json` — shared by spec, never as a jar; ADR-0003),
+   `docs/` holds the architecture notes and ADRs, `tools/` holds standalone Python scripts run outside Maven.
 
 ## Configuration cheat sheet
 
