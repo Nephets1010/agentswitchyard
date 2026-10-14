@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nephets/agentswitchyard/protocol/agent-envelope-v1.schema.json",
+  "title": "AgentEnvelope v1",
+  "description": "agentswitchyard 多 Agent 消息信封 v1。版本化、可校验；A2A 网络传输在 P1，首版为单机信封。",
+  "type": "object",
+  "required": ["protocolVersion", "messageId", "sender", "receiver", "intent", "traceId", "idemKey", "sentAt", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "description": "协议版本。接收方支持自己的版本与所有更低版本。",
+      "enum": ["1.0"]
+    },
+    "messageId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "消息唯一 ID（UUID）。"
+    },
+    "sender": {
+      "type": "string",
+      "minLength": 1,
+      "description": "发送方标识。"
+    },
+    "receiver": {
+      "type": "string",
+      "minLength": 1,
+      "description": "接收方标识。"
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "意图（接收方据此路由）。"
+    },
+    "traceId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "W3C traceId（与仓库①③同源贯通）。"
+    },
+    "idemKey": {
+      "type": "string",
+      "minLength": 1,
+      "description": "幂等键（重投递安全）。"
+    },
+    "sentAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "发送时间（ISO-8601 UTC）。"
+    },
+    "payload": {
+      "description": "业务载荷（结构由 intent 决定；任意 JSON）。"
+    }
+  }
+}

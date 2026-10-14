@@ -1,0 +1,27 @@
+# 信贷审批助手：AI 初筛 → 风险打分 → 规则引擎 → 人工审批 → 放款
+# 首屏「30 秒上手」承诺的 YAML 形态：非 Java 团队也能声明带审批的流程。
+# （handler 绑定由 Java 侧完成；本文件只描述结构与可靠性声明）
+flowId: credit-approve
+version: 1
+steps:
+  - stepId: ai-screen
+    kind: LLM
+    description: AI 初筛（调用模型，响应会被录制用于确定性回放）
+    idempotencyKey: "{ref}:ai-screen"
+  - stepId: risk-score
+    kind: LLM
+    description: 风险打分（调用模型）
+    idempotencyKey: "{ref}:risk-score"
+  - stepId: rule-engine
+    kind: RULE
+    description: 规则引擎：评分超阈值则转人工
+  - stepId: manual-review
+    kind: HUMAN
+    requiresApproval: true
+    approvalRole: risk-officer
+    description: 人工复核（风控岗），意见完整留痕
+  - stepId: disburse
+    kind: TOOL
+    description: 放款执行（外部副作用，幂等键 + 补偿声明）
+    idempotencyKey: "{ref}:disburse"
+    compensation: cancelReserve

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2026 The agentswitchyard Authors. Licensed under the Apache License, Version 2.0 (the "License"); see the
+  LICENSE file in the project root for the full license text.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.github.nephets</groupId>
+    <artifactId>agentswitchyard</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>agentswitchyard-core</artifactId>
+  <name>agentswitchyard-core</name>
+  <description>纯逻辑层：流程定义、执行引擎、幂等、补偿、审批、回放与跨仓契约（ADR-0001：除 Spring AI ChatModel SPI 外零框架依赖）</description>
+
+  <properties>
+    <jacoco.line.minimum>0.80</jacoco.line.minimum>
+  </properties>
+
+  <dependencies>
+    <!--
+      ★ 唯一的框架 SPI 依赖：ReplayChatModel 实现 Spring AI 的 ChatModel（架构 §5.5 / §7.4）。
+        这是「确定性回放」与未来 LangGraph4j 适配层的对接面，刻意只依赖 client-chat 这一个薄 jar，
+        不引入任何 starter。升级 Spring AI 2.x 时只有本依赖与 ReplayChatModel 需要改（ADR-0005）。
+        注意：它传递引入 spring-core / spring-context（非 web / 非 boot），core 明确禁止的是
+        spring-boot / spring-web / servlet —— 由下方 enforcer 机器化守住。
+    -->
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-client-chat</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+    </dependency>
+
+    <!-- 测试：零 Spring Boot 测试设施，保持依赖树可机器判定 -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-core-boundaries</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <searchTransitive>true</searchTransitive>
+                  <excludes>
+                    <!-- core 零 Spring Boot / 零 Web / 零 Servlet（ADR-0001 的机器化守门） -->
+                    <exclude>org.springframework.boot:*</exclude>
+                    <exclude>org.springframework:spring-web</exclude>
+                    <exclude>org.springframework:spring-webmvc</exclude>
+                    <exclude>org.springframework:spring-webflux</exclude>
+                    <exclude>jakarta.servlet:*</exclude>
+                  </excludes>
+                  <message>core 模块禁止依赖 Spring Boot / Spring Web / Servlet，理由见 ADR-0001</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

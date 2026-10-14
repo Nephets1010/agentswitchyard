@@ -1,0 +1,124 @@
+# agentswitchyard 一键体验环境
+#
+#   docker compose up --build
+#   curl -XPOST localhost:18080/demo/flow/start -H 'Content-Type: application/json' -d '{"ref":"ORD-9931"}'
+#   curl localhost:18080/_switchyard/tools
+#
+# ★ 零 API Key：LLM 端点指向本 compose 内的 mock-llm（OpenAI 兼容协议）。
+# ★ 零费用：CI 与 demo 都不会调用任何真实模型 API。
+# ★ 生产级方言：sample 在 compose 里跑 PostgreSQL（本地零依赖体验默认 H2）。
+#
+# ★ 安全（P0 加固）：
+#   - ASWY_PG_PASSWORD：口令由环境变量注入，默认值 switchyard 仅供本地一键体验，
+#     任何非本机/生产部署都必须显式设置（例：ASWY_PG_PASSWORD=xxx docker compose up）。
+#   - postgres 端口只绑定 127.0.0.1，库不暴露到局域网/公网；sample 通过 compose
+#     服务名 postgres 访问，不受影响。需要外部访问时再显式改成对应网卡。
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aswy-postgres
+    environment:
+      POSTGRES_DB: agentswitchyard
+      POSTGRES_USER: switchyard
+      POSTGRES_PASSWORD: ${ASWY_PG_PASSWORD:-switchyard}
+    ports:
+      - "127.0.0.1:15432:5432"
+    healthcheck:
+      # pg_isready 是 postgres 镜像自带的官方探针，不依赖 shell 特性
+      test: ["CMD-SHELL", "pg_isready -U switchyard -d agentswitchyard"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  mock-llm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agentswitchyard/mock-llm:0.1.0
+    container_name: aswy-mock-llm
+    command: ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/mock-llm.jar"]
+    environment:
+      # 让 mock 的 usage 输出「可预测」数值，demo 里能自己核对计量结果
+      SWY_MOCK_USAGE_MODE: deterministic
+      SWY_MOCK_LATENCY_MS: "80"
+      # ★ 应用默认端口是 8081（mock-llm/src/main/resources/application.yml），compose 用 18081
+      #   避免与宿主已有服务冲突。Spring 的环境变量（SERVER_PORT → server.port）优先级高于
+      #   打包进 jar 的 application.yml，所以这里覆盖即可，不需要改应用默认值
+      #   （改默认值会破坏本地 mvn spring-boot:run 与 README 的 8081 说明）。
+      #   ★ 必须与下方 ports 映射、healthcheck 探测端口、以及 sample 的
+      #     SPRING_AI_OPENAI_BASE_URL 三者一致 —— 漏掉这一行会导致容器监听 8081
+      #     而映射/探测 18081，容器永远 unhealthy（CI run 38054327794 的失败根因）。
+      SERVER_PORT: 18081
+    ports:
+      - "18081:18081"
+    healthcheck:
+      # ★ 用 bash 内建的 /dev/tcp 而不是 wget/curl：
+      #   eclipse-temurin:21-jre-jammy 里没有 wget 也没有 curl，而 Dockerfile
+      #   刻意不做 apt install（为了保持 runtime 镜像最小）。
+      #   ★★ 不能用 CMD-SHELL 执行 /dev/tcp —— CMD-SHELL 用 /bin/sh 跑，
+      #   Ubuntu 的 /bin/sh 是 dash，dash 不支持 /dev/tcp（那是 bash 特性）。
+      #   必须用 CMD 显式调用 bash -c（①仓用 8 轮 CI 失败换来的教训）。
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/localhost/18081 &&
+          printf 'GET /__admin/health HTTP/1.0\r\n\r\n' >&3 &&
+          head -1 <&3 | grep -q '200'
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  sample:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agentswitchyard/sample:0.1.0
+    container_name: aswy-sample
+    command: ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/sample.jar"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agentswitchyard
+      SPRING_DATASOURCE_USERNAME: switchyard
+      # ★ 与 postgres 的 POSTGRES_PASSWORD 同一个变量，改口令时两处同步生效
+      SPRING_DATASOURCE_PASSWORD: ${ASWY_PG_PASSWORD:-switchyard}
+      # LLM 端点指向 compose 内的 mock-llm（OpenAI 兼容协议），零 API Key
+      SPRING_AI_OPENAI_BASE_URL: http://mock-llm:18081
+      SPRING_AI_OPENAI_API_KEY: mock-not-needed
+      SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL: mock-chat
+      # ★ 必须显式切到 openai 档位：否则 spring.ai.model.chat 默认是 demo，
+      #   走的是 sample 内置确定性模型，上面三个 SPRING_AI_* 全部不生效、mock-llm 成了摆设
+      #   （compose 头部注释就成了假话）。切档后 mock 的确定性响应带 MOCK( 前缀，
+      #   CI compose-smoke 有一条断言专门盯这个前缀。
+      SWY_CHAT_MODEL: openai
+      SWY_APPROVAL_ROLES_RISK-OFFICER: risk-officer
+      # ★ 同 mock-llm：应用默认端口是 8080（sample/src/main/resources/application.yml 的
+      #   ${SERVER_PORT:8080}），compose 用 18080 避免与宿主冲突，靠环境变量覆盖而非改默认值。
+      #   与下方 ports 映射 / healthcheck 探测端口必须三者一致。
+      SERVER_PORT: 18080
+    ports:
+      - "18080:18080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mock-llm:
+        condition: service_healthy
+    healthcheck:
+      # ★ 探测 /demo/health（sample 真实存在且不依赖额外组件的端点），
+      #   并在轮询逻辑上等它 200 —— healthcheck 通过只代表进程活着，
+      #   Spring Boot 可能仍在初始化 Flyway / 数据源。
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/localhost/18080 &&
+          printf 'GET /demo/health HTTP/1.0\r\n\r\n' >&3 &&
+          head -1 <&3 | grep -q '200'
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
